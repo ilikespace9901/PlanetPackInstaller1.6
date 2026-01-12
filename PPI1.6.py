@@ -111,8 +111,13 @@ def create_buttons_from_descriptions():
         for planet in planet_packs:
             planet_name = planet.get("name", "Unknown Name")
             planet_author = planet.get("author", "Unknown Author")
-
-            button_text = f"{planet_name} by {planet_author}"
+            planet_desc = planet.get("description", "No description")
+            planet_fileSize = planet.get("size", "Unknown file size")
+            planet_version = planet.get("version", "Unknown version")
+            
+            # 1.6 compat to be done, im too lazy now
+            
+            button_text = f"{planet_name} by {planet_author}\n Description: {planet_desc} \n size: {planet_fileSize}, version: {planet_version}"
 
             button = ttk.Button(ModsFrame, style="Mods.TButton", text=button_text)
             button.pack(side="top", fill="x", pady=5)
