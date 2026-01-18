@@ -2,12 +2,14 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
 import json
-import requests  # <-- Add this import for requests
+import requests
 
-# Main Window
+# Change this counter to be accurate
+# Hours Wasted: 2
+
 main = tk.Tk()
 main.title("Planet Pack Installer for 1.6")
-main.geometry("1200x700")
+main.geometry("780x700")
 
 # Styling
 style = ttk.Style()
@@ -46,9 +48,9 @@ def fetch_descriptions():
     try:
         url = f"https://raw.githubusercontent.com/{REPO}/main/{DESCRIPTION}"
         r = requests.get(url)
-        r.raise_for_status()  # Raise error if the request failed
+        r.raise_for_status()
         descriptions = json.loads(r.text)
-        return descriptions  # Return the entire list (not categorized)
+        return descriptions
     except Exception as e:
         print(f"Error fetching descriptions: {e}")
         return []
@@ -63,17 +65,17 @@ def file_notexist():
     data = {
         "path": folder_path
     }
-    with open("cache.json", "w") as file:
+    with open("sfs_dir.txt", "w") as file:
         json.dump(data, file)
     if folder_path == "":
         return
 
-if not os.path.exists("cache.json"):
+if not os.path.exists("sfs_dir.txt"):
     file_notexist()
-elif os.path.getsize("cache.json") == 0:
+elif os.path.getsize("sfs_dir.txt") == 0:
     file_notexist()
 
-with open("cache.json", "r") as file:
+with open("sfs_dir.txt", "r") as file:
     data = json.load(file)
 path = data["path"]
 
@@ -88,9 +90,7 @@ def change_directory():
     os.remove(file_path)
     file_notexist()
 
-# UI related code
-label = tk.Label(main, text="PPI for 1.6", font=("Arial", 20))
-label.pack(side="top", pady=30)
+# UI related shit
 
 ScrollingCanvas = tk.Canvas(main)
 ScrollingCanvas.pack(side="top", fill="both", expand=True)
@@ -100,9 +100,10 @@ ScrollingCanvas.configure(yscrollcommand=ScrollBar.set)
 ScrollBar.pack(side="right", fill="y")
 
 ModsFrame = ttk.Frame(ScrollingCanvas, style="Mods.TFrame")
+ModsFrame.pack(fill="both", expand=True)
 ScrollingCanvas.create_window((0, 0), window=ModsFrame, anchor="nw")
+
 ModsFrame.bind("<Configure>", lambda event, canvas=ScrollingCanvas: canvas.configure(scrollregion=canvas.bbox("all")))
-ModsFrame.pack(side="top", fill="both")
 
 def create_buttons_from_descriptions():
     descriptions = fetch_descriptions()
@@ -114,15 +115,12 @@ def create_buttons_from_descriptions():
             planet_desc = planet.get("description", "No description")
             planet_fileSize = planet.get("size", "Unknown file size")
             planet_version = planet.get("version", "Unknown version")
-            compat = planet.get("compat", "Unknown compatible versiom")
+            compat = planet.get("compat", "Unknown compatible version")
             
-            button_text = f"{planet_name} by {planet_author}\nDescription: {planet_desc}\nsize: {planet_fileSize}, version: {planet_version}\ncompatible with version {compat}"
+            button_text = f"{planet_name} by {planet_author}\nDescription: {planet_desc}\nSize: {planet_fileSize}, Version: {planet_version}\nCompatible with: {compat}"
             button = ttk.Button(ModsFrame, style="Mods.TButton", text=button_text)
             button.pack(side="top", fill="x", pady=5)
 
 create_buttons_from_descriptions()
-
-ButtonFrame = ttk.Frame(main, style="Button.TFrame")
-ButtonFrame.pack(side="bottom", fill="x", pady=20)
 
 main.mainloop()
