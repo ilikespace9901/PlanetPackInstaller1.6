@@ -1,126 +1,97 @@
-import tkinter as tk
-from tkinter import filedialog, ttk, messagebox
-import os
-import json
-import requests
+import customtkinter as ctk
+from tkinter import filedialog, messagebox
+import json, os
+import platform
+import zipfile
+from urllib.request import urlopen
+from urllib.parse import quote
 
-# Change this counter to be accurate
-# Hours Wasted: 2
+main = ctk.CTk()
+main.title("Planet Pack Installer 1.6")
+main.geometry("1200x800")
+root = ctk.CTkScrollableFrame(main, orientation="vertical")
+root.pack(fill="both", expand=True)
 
-main = tk.Tk()
-main.title("Planet Pack Installer for 1.6")
-main.geometry("780x700")
+data = None
+currentos = platform.system()
+with open("sfs_dir.txt", "r") as r:
+    data2 = json.load(r)
+    filepath = data2.get("filepath")
 
-# Styling
-style = ttk.Style()
-style.theme_use("clam")
-style.configure(
-    "Mods.TFrame",
-    foreground="white",
-    background="#424242",
-    padding=10
-)
-style.configure(
-    "Mods.TButton",
-    foreground="white",
-    background="#424242",
-    padding=10
-)
-style.configure(
-    "Button.TFrame",
-    foreground="white",
-    background="#424242",
-    padding=10
-)
-style.configure(
-    "PPI.TFrame",
-    foreground="white",
-    background="#424242",
-    padding=10
-)
-
-# Github Stuff
-REPO = "ilikespace9901/PlanetPackDatabase"
-DESCRIPTION = "packs.json"
-
-# Functions
-def fetch_descriptions():
-    try:
-        url = f"https://raw.githubusercontent.com/{REPO}/main/{DESCRIPTION}"
-        r = requests.get(url)
-        r.raise_for_status()
-        descriptions = json.loads(r.text)
-        return descriptions
-    except Exception as e:
-        print(f"Error fetching descriptions: {e}")
-        return []
-
-def download_file(url):
-    r = requests.get(url, stream=True)
-    r.raise_for_status()
-    return r.content
-
-def file_notexist():
-    folder_path = filedialog.askdirectory()
-    data = {
-        "path": folder_path
-    }
-    with open("sfs_dir.txt", "w") as file:
-        json.dump(data, file)
-    if folder_path == "":
-        return
-
-if not os.path.exists("sfs_dir.txt"):
-    file_notexist()
-elif os.path.getsize("sfs_dir.txt") == 0:
-    file_notexist()
-
-with open("sfs_dir.txt", "r") as file:
-    data = json.load(file)
-path = data["path"]
-
-def installed():
-    messagebox.showinfo(
-        title="Installed a mod",
-        message="You have installed a mod"
-    )
-
-def change_directory():
-    file_path = "cache.json"
-    os.remove(file_path)
-    file_notexist()
-
-# UI related shit
-
-ScrollingCanvas = tk.Canvas(main)
-ScrollingCanvas.pack(side="top", fill="both", expand=True)
-
-ScrollBar = ttk.Scrollbar(ScrollingCanvas, orient="vertical", command=ScrollingCanvas.yview)
-ScrollingCanvas.configure(yscrollcommand=ScrollBar.set)
-ScrollBar.pack(side="right", fill="y")
-
-ModsFrame = ttk.Frame(ScrollingCanvas, style="Mods.TFrame")
-ModsFrame.pack(fill="both", expand=True)
-ScrollingCanvas.create_window((0, 0), window=ModsFrame, anchor="nw")
-
-ModsFrame.bind("<Configure>", lambda event, canvas=ScrollingCanvas: canvas.configure(scrollregion=canvas.bbox("all")))
-
-def create_buttons_from_descriptions():
-    descriptions = fetch_descriptions()
-    planet_packs = descriptions.get('planet_packs', [])
-    if planet_packs:
-        for planet in planet_packs:
-            planet_name = planet.get("name", "Unknown Name")
-            planet_author = planet.get("author", "Unknown Author")
-            planet_desc = planet.get("description", "No description")
-            planet_fileSize = planet.get("size", "Unknown file size")
-            planet_version = planet.get("version", "Unknown version")
-            compat = planet.get("compat", "Unknown compatible version")
+def extract_planet_pack(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        for member in zip_ref.infolist():
+            if member.is_dir():
+                continue
             
-            button_text = f"{planet_name} by {planet_author}\nDescription: {planet_desc}\nSize: {planet_fileSize}, Version: {planet_version}\nCompatible with: {compat}"
-            button = ttk.Button(ModsFrame, style="Mods.TButton", text=button_text)
-            button.pack(side="top", fill="x", pady=5)
+            original_path = member.filename 
+            
+            if original_path.lower().startswith("system/"):
+                new_name = original_path[7:] 
+            else:
+                new_name = original_path
 
-create_buttons_from_descriptions()
+            extract_to = os.path.dirname(zip_path)
+            target_path = os.path.join(extract_to, new_name)
+
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            with zip_ref.open(member) as source, open(target_path, "wb") as target:
+                target.write(source.read())
+
+    os.remove(zip_path)
+
+def get_descriptions():
+    global data
+    gitfile = urlopen("https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/packs.json")
+    data = json.load(gitfile)
+
+def ask_dir():
+    def create_dir():
+        global filepath
+        filepath = filedialog.askdirectory()
+        data = {
+            "filepath": f"{filepath}"
+        }
+        with open("sfs_dir.txt", "w+") as w:
+            w.write(json.dumps(data))
+    if not os.path.exists("sfs_dir.txt"):
+        create_dir()
+    if os.path.getsize("sfs_dir.txt") == 0:
+        create_dir()
+        
+def createbtn():
+    def download_planetpack():
+        filename2 = quote(data["planet_packs"]["file"])
+        zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+        with open(f"{data["planet_packs"]["file"]}", "wb") as f:
+            f.write(zipfile)
+    for planets in data["planet_packs"]:
+        name = planets["name"]
+        author = planets["author"]
+        version = planets["version"]
+        description = planets["description"]
+        size = planets["size"]
+        filename = planets["file"]
+        compat = planets["compat"]
+        def download_planetpack(p=planets):
+            if currentos == "Android" or currentos == "iOS":
+                filename2 = quote(p["file"])
+                zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+                zipcontent = zipfile.read()
+                with open(f"{filepath}/Custom Solar Systems/{p["file"]}", "w") as f:
+                    f.write(zipcontent)
+                extract_planet_pack(f"{filepath}/Custom Solar Systems/{p["file"]}")
+            elif currentos == "Windows" or currentos == "Darwin":
+                filename2 = quote(p["file"])
+                zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+                zipcontent = zipfile.read()
+                with open(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}", "wb") as f:
+                    f.write(zipcontent)
+                extract_planet_pack(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}")
+        ctk.CTkButton(root, text=f"{name}\n{author}\n{version}\n{description}\n{size}\n{filename}\n{compat}", command=download_planetpack).pack(side="top", fill="x")
+
+get_descriptions()
+ask_dir()
+createbtn()
 
 main.mainloop()
