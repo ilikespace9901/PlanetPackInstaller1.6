@@ -88,7 +88,7 @@ def createbtn():
                 with open(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}", "wb") as f:
                     f.write(zipcontent)
                 extract_planet_pack(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}")
-        ctk.CTkButton(root, text=f"{name}\n{author}\n{version}\n{description}\n{size}\n{filename}\n{compat}", command=download_planetpack).pack(side="top", fill="x")
+        ctk.CTkButton(root, text=f"Name: {name}\nAuthor: {author}\nVersion: {version}\nDescription: {description}\nSize: {size}\nFile: {filename}\n Compatible: {compat}", command=download_planetpack).pack(side="top", fill="x")
 
 get_descriptions()
 ask_dir()
