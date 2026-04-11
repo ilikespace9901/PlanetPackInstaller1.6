@@ -12,22 +12,22 @@ main.geometry("1200x800")
 root = ctk.CTkScrollableFrame(main, orientation="vertical")
 root.pack(fill="both", expand=True)
 
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
 data = None
 currentos = platform.system()
-with open("sfs_dir.txt", "r") as r:
-    data2 = json.load(r)
-    filepath = data2.get("filepath")
+
 
 def extract_planet_pack(zip_path):
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         for member in zip_ref.infolist():
             if member.is_dir():
                 continue
-            
-            original_path = member.filename 
-            
+
+            original_path = member.filename
+
             if original_path.lower().startswith("system/"):
-                new_name = original_path[7:] 
+                new_name = original_path[7:]
             else:
                 new_name = original_path
 
@@ -40,31 +40,38 @@ def extract_planet_pack(zip_path):
 
     os.remove(zip_path)
 
+
 def get_descriptions():
     global data
-    gitfile = urlopen("https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/packs.json")
+    gitfile = urlopen(
+        "https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/packs.json"
+    )
     data = json.load(gitfile)
+
 
 def ask_dir():
     def create_dir():
         global filepath
         filepath = filedialog.askdirectory()
-        data = {
-            "filepath": f"{filepath}"
-        }
+        data = {"filepath": f"{filepath}"}
         with open("sfs_dir.txt", "w+") as w:
             w.write(json.dumps(data))
+
     if not os.path.exists("sfs_dir.txt"):
         create_dir()
     if os.path.getsize("sfs_dir.txt") == 0:
         create_dir()
-        
+
+
 def createbtn():
     def download_planetpack():
         filename2 = quote(data["planet_packs"]["file"])
-        zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+        zipfile = urlopen(
+            f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}"
+        )
         with open(f"{data["planet_packs"]["file"]}", "wb") as f:
             f.write(zipfile)
+
     for planets in data["planet_packs"]:
         name = planets["name"]
         author = planets["author"]
@@ -73,22 +80,41 @@ def createbtn():
         size = planets["size"]
         filename = planets["file"]
         compat = planets["compat"]
+
         def download_planetpack(p=planets):
+            with open("sfs_dir.txt", "r") as r:
+                data2 = json.load(r)
+                filepath = data2.get("filepath")
             if currentos == "Android" or currentos == "iOS":
                 filename2 = quote(p["file"])
-                zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+                zipfile = urlopen(
+                    f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}"
+                )
                 zipcontent = zipfile.read()
                 with open(f"{filepath}/Custom Solar Systems/{p["file"]}", "w") as f:
                     f.write(zipcontent)
                 extract_planet_pack(f"{filepath}/Custom Solar Systems/{p["file"]}")
             elif currentos == "Windows" or currentos == "Darwin":
                 filename2 = quote(p["file"])
-                zipfile = urlopen(f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}")
+                zipfile = urlopen(
+                    f"https://raw.githubusercontent.com/ilikespace9901/PlanetPackDatabase/main/{filename2}"
+                )
                 zipcontent = zipfile.read()
-                with open(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}", "wb") as f:
+                with open(
+                    f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}",
+                    "wb",
+                ) as f:
                     f.write(zipcontent)
-                extract_planet_pack(f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}")
-        ctk.CTkButton(root, text=f"Name: {name}\nAuthor: {author}\nVersion: {version}\nDescription: {description}\nSize: {size}\nFile: {filename}\n Compatible: {compat}", command=download_planetpack).pack(side="top", fill="x")
+                extract_planet_pack(
+                    f"{filepath}/Spaceflight Simulator_Data/Custom Solar Systems/{p["file"]}"
+                )
+
+        ctk.CTkButton(
+            root,
+            text=f"Name: {name}\nAuthor: {author}\nVersion: {version}\nDescription: {description}\nSize: {size}\nFile: {filename}\n Compatible: {compat}",
+            command=download_planetpack,
+        ).pack(side="top", fill="x")
+
 
 get_descriptions()
 ask_dir()
