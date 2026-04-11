@@ -113,6 +113,7 @@ def createbtn():
             root,
             text=f"Name: {name}\nAuthor: {author}\nVersion: {version}\nDescription: {description}\nSize: {size}\nFile: {filename}\n Compatible: {compat}",
             command=download_planetpack,
+            font=(None, 14)
         ).pack(side="top", fill="x")
 
 
